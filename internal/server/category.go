@@ -11,7 +11,7 @@ import (
 
 func (s *EchoServer) AddCategory(ctx echo.Context) error {
 	category := new(models.Category)
-	if err := ctx.Bind(category); err != nil {
+	if err := ctx.Bind(&category); err != nil {
 		return ctx.JSON(http.StatusUnsupportedMediaType, map[string]any{"error": err.Error()})
 	}
 	category, err := s.DB.AddCategory(ctx.Request().Context(), category)

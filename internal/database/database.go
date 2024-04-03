@@ -2,11 +2,9 @@ package database
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"strconv"
 
 	"github.com/quangchien0212/ecommerce-app/internal/abstract"
+	"github.com/quangchien0212/ecommerce-app/internal/config"
 	"github.com/quangchien0212/ecommerce-app/internal/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
@@ -24,19 +22,15 @@ type Client struct {
 	DB *gorm.DB
 }
 
-func NewDBClient() (DBClient, error) {
-	dbHost := os.Getenv("DB_HOST")
-	dbUsername := os.Getenv("DB_USERNAME")
-	dbPassword := os.Getenv("DB_PASSWORD")
-	dbName := os.Getenv("DB_NAME")
-	dbPort := os.Getenv("DB_PORT")
-	databasePort, err := strconv.Atoi(dbPort)
-	if err != nil {
-		log.Fatal("Invalid DB Port")
-	}
-
+func NewDBClient(c *config.Config) (DBClient, error) {
+	config := c.Get()
+	dbHost := config.GetString("DB_HOST")
+	dbUsername := config.GetString("DB_USERNAME")
+	dbPassword := config.GetString("DB_PASSWORD")
+	dbName := config.GetString("DB_NAME")
+	dbPort := config.GetUint("DB_PORT")
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s",
-		dbHost, dbUsername, dbPassword, dbName, databasePort, "disable")
+		dbHost, dbUsername, dbPassword, dbName, dbPort, "disable")
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -58,6 +52,7 @@ func (c Client) Ready() bool {
 	}
 	return false
 }
+
 func (c Client) RunMigration() error {
 	err := c.DB.AutoMigrate(
 		&models.Category{},

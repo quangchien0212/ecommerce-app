@@ -16,31 +16,34 @@ import (
 
 func TestAddNewCategory(t *testing.T) {
 	testDB, _ := tests.Setup()
-	type FakeCategory struct {
+	defer tests.Teardown(testDB)
+
+	type FCategory struct {
 		Name        string `json:"name" faker:"word,unique"`
 		Description string `json:"description" faker:"word,unique"`
 	}
 
 	t.Run("should return 201 created for a new category", func(t *testing.T) {
-		var customCategory FakeCategory
-		_ = faker.FakeData(&customCategory)
-		out, _ := json.Marshal(&customCategory)
+		var customCategory FCategory
+		faker.FakeData(&customCategory)
+		out, _ := json.Marshal(customCategory)
 
 		e := echo.New()
 
-		req := httptest.NewRequest(http.MethodPost, "/category", strings.NewReader(string(out)))
+		req := httptest.NewRequest(
+			http.MethodPost,
+			"/category",
+			strings.NewReader(string(out)),
+		)
 		rec := httptest.NewRecorder()
 
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
 		c := e.NewContext(req, rec)
+		sv := server.NewServer(testDB)
 
-		var service = server.NewServer(testDB)
-
-		if assert.NoError(t, service.AddCategory(c)) {
+		if assert.NoError(t, sv.AddCategory(c)) {
 			assert.Equal(t, http.StatusCreated, rec.Code)
 		}
-		tests.Teardown(testDB)
 	})
-
 }

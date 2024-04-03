@@ -1,9 +1,12 @@
 package main
 
 import (
-	"net/http"
+	"log"
+	"log/slog"
 
-	"github.com/labstack/echo/v4"
+	"github.com/quangchien0212/ecommerce-app/internal/config"
+	"github.com/quangchien0212/ecommerce-app/internal/database"
+	"github.com/quangchien0212/ecommerce-app/internal/server"
 )
 
 type User struct {
@@ -12,15 +15,24 @@ type User struct {
 }
 
 func main() {
-	e := echo.New()
-	e.GET("/", func(c echo.Context) error {
-		u := &User{
-			Name:  "Jon",
-			Email: "jon@labstack.com",
-		}
+	slog.Info("Initializing....")
+	c := config.NewConfig()
+	db, err := database.NewDBClient(c)
+	if db.Ready() {
+		slog.Info("The database is ready")
+	} else {
+		slog.Info("The database is not ready")
+	}
+	if err != nil {
+		log.Fatalf("Failed DB Startup: %s\n", err)
+		return
+	}
 
-
-		return c.JSONPretty(http.StatusOK, u, "  ")
-	})
-	e.Logger.Fatal(e.Start(":1323"))
+	err = db.RunMigration()
+	if err != nil {
+		log.Fatalf("Migration Failed: %s\n", err)
+		return
+	}
+	service := server.NewServer(db)
+	log.Fatal(service.Start())
 }
